@@ -249,12 +249,34 @@ registerForm.addEventListener('submit', async (e) => {
 function logout() {
   authToken = '';
   currentUser = null;
+
   localStorage.removeItem('token');
   localStorage.removeItem('user');
+
+  // איפוס טופס ההתחברות
+  document.getElementById('loginForm').reset();
+  document.getElementById('otpForm').reset();
+  document.getElementById('registerForm').reset();
+
+  // חזרה למצב התחברות רגיל עם סיסמה
+  isOtpMode = false;
+  passwordGroup.style.display = 'flex';
+  document.getElementById('loginPassword').setAttribute('required', 'true');
+  toggleAuthMode.style.display = 'block';
+  btnLoginSubmit.innerText = 'התחברות';
+
+  loginForm.style.display = 'flex';
+  otpForm.style.display = 'none';
+
   updateUserUI();
+
   cartCount.innerText = '0';
+  cartItemsList.innerHTML = '';
+  cartTotal.innerText = '0';
+
   showToast('התנתקת מהחשבון');
 }
+
 
 async function fetchWines() {
   try {

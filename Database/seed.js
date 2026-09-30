@@ -30,7 +30,7 @@ export const seedDatabase = async () => {
       {
         id: 'user-002',
         full_name: 'שרה כהן',
-        email: 'sara.cohen@gmail.com',
+        email: 'avreymi219@gmail.com',
         password: hashedPasswordSara,
         phone: '052-9876543',
         address: 'תל אביב',
@@ -39,7 +39,7 @@ export const seedDatabase = async () => {
       {
         id: 'user-003',
         full_name: 'יוסי לוי',
-        email: 'yossi.levi@gmail.com',
+        email: 'avreymi213@gmail.com',
         password: hashedPasswordYossi,
         phone: '054-1112233',
         address: 'חיפה',
