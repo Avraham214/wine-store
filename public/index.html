@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>מרתף היין | חנות יינות בוטיק</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700&family=Frank+Ruhl+Libre:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast"></div>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="container header-container">
+      <div class="brand">
+        <span class="logo-icon">🍷</span>
+        <h1 class="logo-text">מרתף היין</h1>
+      </div>
+      
+      <nav class="nav">
+        <button id="myOrdersBtn" class="nav-link" style="display:none;">📋 ההזמנות שלי</button>
+        <div id="userInfo" class="user-info"></div>
+        <button id="cartBtn" class="cart-btn" style="display:none;">
+          <span>🛒 סל קניות</span>
+          <span id="cartCount" class="cart-badge">0</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Guest Auth Section -->
+  <section id="authSection" class="auth-section">
+    <div class="auth-card">
+      <div class="auth-tabs">
+        <button id="tabLogin" class="tab-btn active">התחברות</button>
+        <button id="tabRegister" class="tab-btn">הרשמה חדשה</button>
+      </div>
+
+      <!-- Login Form (Password default, toggle to OTP) -->
+      <form id="loginForm" class="auth-form active">
+        <div class="form-header">
+          <h3>ברוכים השבים</h3>
+          <p class="sub-text">התחברו לחשבון בוטיק היין שלכם</p>
+        </div>
+
+        <div class="form-group">
+          <label>דואר אלקטרוני</label>
+          <input type="email" id="loginEmail" placeholder="name@example.com" required>
+        </div>
+
+        <!-- Password Field (Default) -->
+        <div class="form-group" id="passwordGroup">
+          <label>סיסמה</label>
+          <input type="password" id="loginPassword" placeholder="••••••••">
+        </div>
+
+        <div class="auth-actions">
+          <button type="submit" id="btnLoginSubmit" class="btn-primary">התחברות</button>
+          <button type="button" id="toggleAuthMode" class="text-btn">🔄 מעבר להתחברות באמצעות קוד אימות (OTP)</button>
+        </div>
+      </form>
+
+      <!-- OTP Form -->
+      <form id="otpForm" class="auth-form" style="display: none;">
+        <div class="form-header">
+          <h3>אימות דו-שלבי</h3>
+          <p class="sub-text">שלחנו קוד בן 6 ספרות לכתובת המייל שלך</p>
+        </div>
+        <div class="form-group">
+          <input type="text" id="otpCode" placeholder="הזן קוד (6 ספרות)" maxlength="6">
+        </div>
+        <button type="submit" class="btn-primary">אמת והתחבר</button>
+        <button type="button" id="backToPassword" class="text-btn" style="text-align:center; margin-top:10px;">חזרה להתחברות עם סיסמה</button>
+      </form>
+
+      <!-- Register Form -->
+      <form id="registerForm" class="auth-form" style="display: none;">
+        <div class="form-header">
+          <h3>יצירת חשבון חדש</h3>
+          <p class="sub-text">הצטרפו למועדון חובבי היין שלנו</p>
+        </div>
+        <div class="form-grid-auth">
+          <div class="form-group"><input type="text" id="regId" placeholder="תעודת זהות / מזהה" required></div>
+          <div class="form-group"><input type="text" id="regName" placeholder="שם מלא" required></div>
+        </div>
+        <div class="form-group"><input type="email" id="regEmail" placeholder="דואר אלקטרוני" required></div>
+        <div class="form-group"><input type="password" id="regPassword" placeholder="סיסמה (לפחות 5 תווים)" required></div>
+        <div class="form-grid-auth">
+          <div class="form-group"><input type="tel" id="regPhone" placeholder="טלפון נייד"></div>
+          <div class="form-group"><input type="text" id="regAddress" placeholder="כתובת למשלוח"></div>
+        </div>
+        <button type="submit" class="btn-primary" style="margin-top: 10px;">הירשם עכשיו</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- Protected Store Content -->
+  <div id="protectedContent" style="display: none;">
+    <section class="hero">
+      <div class="hero-content">
+        <h2>יינות בוטיק מובחרים עד הבית</h2>
+        <p>חוויית יין ייחודית מהיקבים המובילים, שנבחרו בקפידה עבורכם</p>
+      </div>
+    </section>
+
+    <main class="container">
+      <!-- Admin Panel -->
+      <section id="adminSection" class="admin-section" style="display: none;">
+        <div class="admin-card">
+          <h3>⚙️ פאנל ניהול: הוספת יין חדש לקטלוג</h3>
+          <form id="addWineForm" class="admin-form">
+            <div class="form-grid">
+              <input type="text" id="wineName" placeholder="שם היין" required>
+              <select id="wineType" required>
+                <option value="">סוג יין...</option>
+                <option value="red">אדום</option>
+                <option value="white">לבן</option>
+                <option value="rose">רוזה</option>
+                <option value="sparkling">מבעבע</option>
+                <option value="dessert">קינוח</option>
+              </select>
+              <select id="wineSweetness" required>
+                <option value="">רמת מתיקות...</option>
+                <option value="dry">יבש</option>
+                <option value="semi-dry">חצי יבש</option>
+                <option value="semi-sweet">חצי מתוק</option>
+                <option value="sweet">מתוק</option>
+              </select>
+              <input type="number" id="winePrice" placeholder="מחיר (₪)" step="0.1" required>
+              <input type="number" id="wineStock" placeholder="כמות במלאי" required>
+              <input type="text" id="wineDesc" placeholder="תיאור קצר וטעמים">
+            </div>
+            <button type="submit" class="btn-admin">הוסף יין למלאי ➕</button>
+          </form>
+        </div>
+      </section>
+
+      <!-- Wine Catalog -->
+      <section id="catalog" class="catalog-section">
+        <div class="section-title">
+          <h2>הקטלוג המובחר</h2>
+          <div class="gold-divider"></div>
+        </div>
+        <div id="wineGrid" class="wine-grid"></div>
+      </section>
+
+      <!-- About Section -->
+      <section style="margin: 60px auto 40px auto; padding: 40px; background: #fff; border-radius: 16px; box-shadow: var(--shadow); border: 1px solid rgba(212,175,55,0.15);">
+        <div class="section-title" style="margin-bottom: 20px;">
+          <h2>אודות מרתף היין</h2>
+          <div class="gold-divider"></div>
+        </div>
+        <p style="text-align: center; color: var(--text-muted); max-width: 800px; margin: 0 auto; line-height: 1.8; font-size: 1.05rem;">
+          "מרתף היין" הוא בית לתרבות יין עילית, המביא אליכם את מבחר יינות הבוטיק המשובחים ביותר מהכרמים המובילים. 
+          אנו מאמינים שיין איכותי הוא הרבה מעבר למשקה – הוא סיפור, אדמה ותשוקה. כל בקבוק בקטלוג שלנו נבחר בקפידה רבה כדי להעניק לכם חוויה קולינרית מושלמת לכל אירוע.
+        </p>
+      </section>
+    </main>
+  </div>
+
+  <!-- Orders Modal -->
+  <div id="ordersModal" class="modal">
+    <div class="modal-card" style="max-width: 600px;">
+      <span id="closeOrders" class="close-modal">&times;</span>
+      <h3>📋 היסטוריית ההזמנות שלי</h3>
+      <div id="ordersList" style="max-height: 400px; overflow-y: auto; margin-top: 15px;"></div>
+    </div>
+  </div>
+
+  <!-- Sliding Cart Drawer -->
+  <div id="cartDrawer" class="cart-drawer">
+    <div class="cart-drawer-content">
+      <div class="cart-drawer-header">
+        <h3>🛒 סל הקניות שלי</h3>
+        <span id="closeCart" class="close-drawer">&times;</span>
+      </div>
+      <div id="cartItemsList" class="cart-drawer-body"></div>
+      <div class="cart-drawer-footer">
+        <div class="total-row">
+          <span>סה"כ לתשלום:</span>
+          <span class="total-price"><span id="cartTotal">0</span> ₪</span>
+        </div>
+        <button id="checkoutBtn" class="btn-checkout">לתשלום וביצוע הזמנה ➔</button>
+        <button id="continueShoppingBtn" class="btn-continue" style="margin-top: 10px; background: none; border: 1px solid var(--wine-dark); color: var(--wine-dark); padding: 10px; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; transition: background 0.2s;">← המשך בקניות</button>
+      </div>
+    </div>
+  </div>
+  <div id="cartOverlay" class="cart-overlay"></div>
+
+  <!-- Edit Wine Modal -->
+  <div id="editWineModal" class="modal">
+    <div class="modal-card">
+      <span id="closeEditWine" class="close-modal">&times;</span>
+      <h3>✏️ עדכון פרטי יין</h3>
+      <form id="editWineForm" class="modal-form">
+        <input type="hidden" id="editWineId">
+        <div class="form-group"><label>שם היין:</label><input type="text" id="editWineName" required></div>
+        <div class="form-group"><label>מחיר ב-₪:</label><input type="number" id="editWinePrice" step="0.1" required></div>
+        <div class="form-group"><label>כמות במלאי:</label><input type="number" id="editWineStock" required></div>
+        <div class="form-group"><label>תיאור:</label><input type="text" id="editWineDesc"></div>
+        <button type="submit" class="btn-primary" style="margin-top: 15px;">שמור שינויים 💾</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
