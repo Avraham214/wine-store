@@ -4,22 +4,29 @@ import { authMiddleware, requireAdmin } from '../Middlewares/authMiddleware.js';
 
 const router = express.Router();
 
-// GET /api/v1/wines - טעינת כל היינות
+
+
+// GET /api/v1/wines - טעינת כל היינות או סינון לפי Query Parameters
 router.get('/', async (req, res) => {
   try {
-    const wines = await Wine.findAll({ order: [['id', 'ASC']] });
-    return res.status(200).json(wines);
-  } catch (error) {
-    return res.status(500).json({ error: 'Internal Server Error', message: error.message });
-  }
-});
+    const { type, sweetness } = req.query;
+    const whereCondition = {};
 
-// GET /api/v1/wines/:id - טעינת יין לפי ID
-router.get('/:id', async (req, res) => {
-  try {
-    const wine = await Wine.findByPk(req.params.id);
-    if (!wine) return res.status(404).json({ error: 'Not Found', message: 'Wine not found' });
-    return res.status(200).json(wine);
+    // אם נשלח סינון לפי סוג
+    if (type) {
+      whereCondition.type = type;
+    }
+    // אם נשלח סינון לפי מתיקות
+    if (sweetness) {
+      whereCondition.sweetness = sweetness;
+    }
+
+    const wines = await Wine.findAll({ 
+      where: whereCondition,
+      order: [['id', 'ASC']] 
+    });
+
+    return res.status(200).json(wines);
   } catch (error) {
     return res.status(500).json({ error: 'Internal Server Error', message: error.message });
   }
