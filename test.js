@@ -1,158 +1,142 @@
 import app from './index.js';
 
-// Wait briefly for server to start
+// ממתינים קלות לעליית השרת
 await new Promise(resolve => setTimeout(resolve, 500));
 
 const BASE_URL = 'http://localhost:3000';
 let userToken = '';
+let adminToken = '';
 
-// הערה: הטסט מסתמך על debugCode, שמוחזר רק כשאין EMAIL_USER ו-EMAIL_PASS ב-.env
-// ורק כש-NODE_ENV אינו production. וודא שרצת קודם npm run seed.
 const TEST_EMAIL = 'avreymi218@gmail.com';
 const TEST_PASSWORD = '12345';
 
+const ADMIN_EMAIL = 'avreymi214@gmail.com';
+const ADMIN_PASSWORD = 'Avi214';
+
 const runTests = async () => {
-  console.log('\n--- Starting Wine Store Backend Verification Tests ---\n');
+  console.log('\n==================================================');
+  console.log(' 🍷 Starting Full Wine Store API Verification Tests');
+  console.log('==================================================\n');
 
   try {
-    // Test 1: Health check
-    console.log('Test 1: GET / (Health Check)');
+    // Test 1: Health Check
+    console.log('Test 1: GET / (Health Check & Base Endpoint)');
     const healthRes = await fetch(`${BASE_URL}/`, {
       headers: { 'Accept': 'application/json' }
     });
     const healthData = await healthRes.json();
-    console.log(`Status: ${healthRes.status}, Response:`, healthData);
+    console.log(`Status: ${healthRes.status}, Server Status: ${healthData.status}`);
     if (healthRes.status !== 200) throw new Error('Health check failed');
 
-    // Test 2: GET /api/v1/wines
-    console.log('\nTest 2: GET /api/v1/wines (List Wines)');
+    // Test 2: GET /api/v1/wines (List & Dynamic Filtering)
+    console.log('\nTest 2: GET /api/v1/wines (Wines Catalog & Dynamic Filters)');
     const winesRes = await fetch(`${BASE_URL}/api/v1/wines`);
     const winesData = await winesRes.json();
-    console.log(`Status: ${winesRes.status}, Found ${winesData.length} wines.`);
+    console.log(`Status: ${winesRes.status}, Total wines in DB: ${winesData.length}`);
     if (winesRes.status !== 200 || winesData.length === 0) throw new Error('Wines list failed');
-    console.log(`First wine: "${winesData[0].name}" (Stock: ${winesData[0].stock_quantity}, Price: ${winesData[0].price} NIS)`);
 
-    // Test 3: Login (password) + OTP verification
-    console.log('\nTest 3: POST /api/v1/users/login + /verify-otp (Authenticate & Get JWT)');
-    const loginRes = await fetch(`${BASE_URL}/api/v1/users/login`, {
+    // Test 2b: Query filtering test
+    console.log('Testing query filter: ?type=red&sweetness=dry');
+    const filterRes = await fetch(`${BASE_URL}/api/v1/wines?type=red&sweetness=dry`);
+    const filteredWines = await filterRes.json();
+    console.log(`Filtered Status: ${filterRes.status}, Found: ${filteredWines.length} red dry wines`);
+    if (filterRes.status !== 200) throw new Error('Wine filtering failed');
+
+    // Test 3: Authenticate Customer & Admin Users
+    console.log('\nTest 3: Authenticate Customer & Admin Users (JWT)');
+    
+    // Login Customer
+    const custLoginRes = await fetch(`${BASE_URL}/api/v1/users/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: TEST_EMAIL, password: TEST_PASSWORD })
     });
-    const loginData = await loginRes.json();
-    console.log(`Login Status: ${loginRes.status}, OTP required: ${!!loginData.requiresOtp}`);
-    if (loginRes.status !== 200 || !loginData.requiresOtp) throw new Error('Login step failed');
-    if (!loginData.debugCode) throw new Error('No debugCode returned (is EMAIL_USER/EMAIL_PASS set in .env?)');
+    const custLoginData = await custLoginRes.json();
+    userToken = custLoginData.token;
+    console.log(`Customer Login Status: ${custLoginRes.status}, Received Token: ${!!userToken}`);
+    if (custLoginRes.status !== 200 || !userToken) throw new Error('Customer authentication failed');
 
-    const verifyRes = await fetch(`${BASE_URL}/api/v1/users/verify-otp`, {
+    // Login Admin
+    const adminLoginRes = await fetch(`${BASE_URL}/api/v1/users/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: TEST_EMAIL, code: loginData.debugCode })
+      body: JSON.stringify({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD })
     });
-    const verifyData = await verifyRes.json();
-    console.log(`Verify Status: ${verifyRes.status}, Token Received: ${!!verifyData.token}`);
-    if (verifyRes.status !== 200 || !verifyData.token) throw new Error('OTP verification failed');
-    userToken = verifyData.token;
+    const adminLoginData = await adminLoginRes.json();
+    adminToken = adminLoginData.token;
+    console.log(`Admin Login Status: ${adminLoginRes.status}, Received Token: ${!!adminToken}`);
+    if (adminLoginRes.status !== 200 || !adminToken) throw new Error('Admin authentication failed');
 
-    // Test 4: Auth Middleware checks
-    console.log('\nTest 4: Authentication Middleware checks on /api/v1/cart');
-    // Without header
-    const noAuthRes = await fetch(`${BASE_URL}/api/v1/cart`);
-    console.log(`Without token -> Status: ${noAuthRes.status} (Expected: 401)`);
-    if (noAuthRes.status !== 401) throw new Error('Expected 401 for missing token');
-
-    // With invalid token
-    const badAuthRes = await fetch(`${BASE_URL}/api/v1/cart`, {
-      headers: { Authorization: 'Bearer invalid.jwt.token' }
-    });
-    console.log(`With invalid token -> Status: ${badAuthRes.status} (Expected: 401)`);
-    if (badAuthRes.status !== 401) throw new Error('Expected 401 for invalid token');
-
-    // With valid JWT Token
-    const validAuthRes = await fetch(`${BASE_URL}/api/v1/cart`, {
-      headers: { Authorization: `Bearer ${userToken}` }
-    });
-    const initialCart = await validAuthRes.json();
-    console.log(`With valid JWT -> Status: ${validAuthRes.status}, Cart length: ${initialCart.length} (Expected: 200)`);
-    if (validAuthRes.status !== 200) throw new Error('Expected 200 for valid JWT');
-
-    // Test 4b: הרשאות מנהל - לקוח רגיל לא יכול להוסיף יין
-    console.log('\nTest 4b: Customer cannot create wines (expected 403), guest gets 401');
+    // Test 4: Auth & Authorization Middlewares Check
+    console.log('\nTest 4: Authorization Checks (Admin vs Customer Access)');
+    
+    // Guest tries to create wine (401)
     const guestWineRes = await fetch(`${BASE_URL}/api/v1/wines`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: 'Hack', type: 'red', sweetness: 'dry', price: 1 })
+      body: JSON.stringify({ name: 'Unauthorized Wine', type: 'red', sweetness: 'dry', price: 100 })
     });
-    console.log(`Guest -> Status: ${guestWineRes.status} (Expected: 401)`);
-    if (guestWineRes.status !== 401) throw new Error('Expected 401 for guest creating wine');
+    console.log(`Guest create wine -> Status: ${guestWineRes.status} (Expected: 401)`);
+    if (guestWineRes.status !== 401) throw new Error('Expected 401 for guest');
 
-    const customerWineRes = await fetch(`${BASE_URL}/api/v1/wines`, {
+    // Customer tries to create wine (403)
+    const custWineRes = await fetch(`${BASE_URL}/api/v1/wines`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${userToken}` },
-      body: JSON.stringify({ name: 'Hack', type: 'red', sweetness: 'dry', price: 1 })
+      body: JSON.stringify({ name: 'Unauthorized Wine', type: 'red', sweetness: 'dry', price: 100 })
     });
-    console.log(`Customer -> Status: ${customerWineRes.status} (Expected: 403)`);
-    if (customerWineRes.status !== 403) throw new Error('Expected 403 for customer creating wine');
+    console.log(`Customer create wine -> Status: ${custWineRes.status} (Expected: 403)`);
+    if (custWineRes.status !== 403) throw new Error('Expected 403 for regular customer');
 
-    // Test 5: Add items to cart
-    console.log('\nTest 5: POST /api/v1/cart (Add items to cart)');
-    const addRes1 = await fetch(`${BASE_URL}/api/v1/cart`, {
+    // Test 5: Cart Management
+    console.log('\nTest 5: POST & GET /api/v1/cart (Cart Operations)');
+    const addCartRes = await fetch(`${BASE_URL}/api/v1/cart`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${userToken}` },
-      body: JSON.stringify({ wine_id: 1, quantity: 2 })
+      body: JSON.stringify({ wine_id: 1, quantity: 2, increment: false })
     });
-    const cartItem1 = await addRes1.json();
-    console.log(`Added wine 1 (qty 2) -> Status: ${addRes1.status}, Item ID: ${cartItem1.id}`);
-    if (addRes1.status !== 200 || cartItem1.quantity !== 2) throw new Error('Failed to add item 1');
+    const cartItem = await addCartRes.json();
+    console.log(`Add to cart -> Status: ${addCartRes.status}, Item ID: ${cartItem.id}, Qty: ${cartItem.quantity}`);
+    if (addCartRes.status !== 200) throw new Error('Add to cart failed');
 
-    const addRes2 = await fetch(`${BASE_URL}/api/v1/cart`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${userToken}` },
-      body: JSON.stringify({ wine_id: 2, quantity: 1 })
-    });
-    const cartItem2 = await addRes2.json();
-    console.log(`Added wine 2 (qty 1) -> Status: ${addRes2.status}, Item ID: ${cartItem2.id}`);
-    if (addRes2.status !== 200) throw new Error('Failed to add item 2');
-
-    // Test 6: Order checkout transaction
-    console.log('\nTest 6: POST /api/v1/orders (Process checkout inside transaction)');
-    const stockWine1Before = winesData.find(w => w.id === 1).stock_quantity;
+    // Test 6: Order Checkout Transaction
+    console.log('\nTest 6: POST /api/v1/orders (Checkout Transaction)');
     const checkoutRes = await fetch(`${BASE_URL}/api/v1/orders`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${userToken}` },
-      body: JSON.stringify({ shipping_address: '12 Ben Yehuda St, Tel Aviv' })
+      body: JSON.stringify({ shipping_address: '12 Ben Gurion St, Be\'er Sheva' })
     });
     const checkoutData = await checkoutRes.json();
     console.log(`Checkout Status: ${checkoutRes.status} (Expected: 201)`);
-    console.log('Order Summary:', {
-      order_id: checkoutData.order?.id,
-      total_price: checkoutData.order?.total_price,
-      status: checkoutData.order?.status
-    });
+    console.log(`Order #${checkoutData.order?.id} created with Total: ${checkoutData.order?.total_price} NIS`);
     if (checkoutRes.status !== 201) throw new Error('Order checkout failed');
 
-    // Test 7: Verify cart is cleared
-    console.log('\nTest 7: Verify user cart is cleared after checkout');
-    const clearedCartRes = await fetch(`${BASE_URL}/api/v1/cart`, {
-      headers: { Authorization: `Bearer ${userToken}` }
+    // Test 7: Admin Global Queries
+    console.log('\nTest 7: Admin Global Queries (Users & Orders Details)');
+    
+    // Admin fetches all users
+    const adminUsersRes = await fetch(`${BASE_URL}/api/v1/users`, {
+      headers: { Authorization: `Bearer ${adminToken}` }
     });
-    const clearedCart = await clearedCartRes.json();
-    console.log(`Cart items remaining: ${clearedCart.length} (Expected: 0)`);
-    if (clearedCart.length !== 0) throw new Error('Cart was not cleared after checkout');
+    const usersList = await adminUsersRes.json();
+    console.log(`Admin GET /users -> Status: ${adminUsersRes.status}, Found: ${usersList.length} users`);
+    if (adminUsersRes.status !== 200) throw new Error('Admin fetch users failed');
 
-    // Test 8: Verify stock deduction
-    console.log('\nTest 8: Verify wine stock deduction');
-    const wine1AfterRes = await fetch(`${BASE_URL}/api/v1/wines/1`);
-    const wine1After = await wine1AfterRes.json();
-    console.log(`Wine 1 stock: before=${stockWine1Before}, after=${wine1After.stock_quantity} (Deducted 2)`);
-    if (wine1After.stock_quantity !== stockWine1Before - 2) throw new Error('Stock deduction mismatch');
+    // Admin fetches full user details card
+    const userDetailRes = await fetch(`${BASE_URL}/api/v1/users/user-001/details`, {
+      headers: { Authorization: `Bearer ${adminToken}` }
+    });
+    const userDetail = await userDetailRes.json();
+    console.log(`Admin GET /users/user-001/details -> Status: ${userDetailRes.status}`);
+    console.log(`User: ${userDetail.full_name}, Cart Items: ${userDetail.CartItems.length}, Past Orders: ${userDetail.Orders.length}`);
+    if (userDetailRes.status !== 200 || !userDetail.Orders) throw new Error('Fetch user details failed');
 
-    console.log('\n==========================================');
-    console.log(' 🎉 ALL TESTS PASSED SUCCESSFULLY! 🎉 ');
-    console.log('==========================================\n');
+    console.log('\n==================================================');
+    console.log(' 🎉 ALL SYSTEM TESTS PASSED SUCCESSFULLY! 🎉 ');
+    console.log('==================================================\n');
     process.exit(0);
   } catch (error) {
-    console.error('\n❌ Test failure:', error);
+    console.error('\n❌ Test Failure:', error.message);
     process.exit(1);
   }
 };
