@@ -41,7 +41,7 @@
         <button id="tabRegister" class="tab-btn">הרשמה חדשה</button>
       </div>
 
-      <!-- Login Form (Password default, toggle to OTP) -->
+      <!-- Login Form -->
       <form id="loginForm" class="auth-form active">
         <div class="form-header">
           <h3>ברוכים השבים</h3>
@@ -53,7 +53,6 @@
           <input type="email" id="loginEmail" placeholder="name@example.com" required>
         </div>
 
-        <!-- Password Field (Default) -->
         <div class="form-group" id="passwordGroup">
           <label>סיסמה</label>
           <input type="password" id="loginPassword" placeholder="••••••••">
@@ -104,48 +103,125 @@
     <section class="hero">
       <div class="hero-content">
         <h2>יינות בוטיק מובחרים עד הבית</h2>
-        <p>חוויית יין ייחודית מהיקבים המובילים, שנבחרו בקפידה עבורכם</p>
+        <p>חוויית ייין ייחודית מהיקבים המובילים, שנבחרו בקפידה עבורכם</p>
       </div>
     </section>
 
     <main class="container">
-      <!-- Admin Panel -->
+      <!-- Admin Panel Dashboard -->
       <section id="adminSection" class="admin-section" style="display: none;">
         <div class="admin-card">
-          <h3>⚙️ פאנל ניהול: הוספת יין חדש לקטלוג</h3>
-          <form id="addWineForm" class="admin-form">
-            <div class="form-grid">
-              <input type="text" id="wineName" placeholder="שם היין" required>
-              <select id="wineType" required>
-                <option value="">סוג יין...</option>
-                <option value="red">אדום</option>
-                <option value="white">לבן</option>
-                <option value="rose">רוזה</option>
-                <option value="sparkling">מבעבע</option>
-                <option value="dessert">קינוח</option>
-              </select>
-              <select id="wineSweetness" required>
-                <option value="">רמת מתיקות...</option>
-                <option value="dry">יבש</option>
-                <option value="semi-dry">חצי יבש</option>
-                <option value="semi-sweet">חצי מתוק</option>
-                <option value="sweet">מתוק</option>
-              </select>
-              <input type="number" id="winePrice" placeholder="מחיר (₪)" step="0.1" required>
-              <input type="number" id="wineStock" placeholder="כמות במלאי" required>
-              <input type="text" id="wineDesc" placeholder="תיאור קצר וטעמים">
+          <h3>⚙️ מרכז השאילתות והניהול למנהל</h3>
+          
+          <div class="auth-tabs" style="margin-bottom:20px;">
+            <button id="tabAdminAddWine" class="tab-btn active">➕ הוספת יין</button>
+            <button id="tabAdminUsers" class="tab-btn">🔍 שאילתות משתמשים וסלים</button>
+            <button id="tabAdminOrders" class="tab-btn">📦 ניהול הזמנות גלובלי</button>
+          </div>
+
+          <!-- Add Wine Sub-Panel -->
+          <div id="panelAddWine">
+            <form id="addWineForm" class="admin-form">
+              <div class="form-grid">
+                <input type="text" id="wineName" placeholder="שם היין" required>
+                <select id="wineType" required>
+                  <option value="">סוג יין...</option>
+                  <option value="red">אדום</option>
+                  <option value="white">לבן</option>
+                  <option value="rose">רוזה</option>
+                  <option value="sparkling">מבעבע</option>
+                  <option value="dessert">קינוח</option>
+                </select>
+                <select id="wineSweetness" required>
+                  <option value="">רמת מתיקות...</option>
+                  <option value="dry">יבש</option>
+                  <option value="semi-dry">חצי יבש</option>
+                  <option value="semi-sweet">חצי מתוק</option>
+                  <option value="sweet">מתוק</option>
+                </select>
+                <input type="number" id="winePrice" placeholder="מחיר (₪)" step="0.1" required>
+                <input type="number" id="wineStock" placeholder="כמות במלאי" required>
+                <input type="text" id="wineDesc" placeholder="תיאור קצר וטעמים">
+              </div>
+              <button type="submit" class="btn-admin">הוסף יין למלאי ➕</button>
+            </form>
+          </div>
+
+          <!-- Users & Query Sub-Panel -->
+          <div id="panelUsersQuery" style="display:none;">
+            <div style="display:flex; gap:10px; margin-bottom:15px;">
+              <input type="text" id="adminUserSearchInput" placeholder="חפש לפי שם, אימייל או ת'ז..." style="flex:1; padding:10px; border-radius:8px; border:1px solid var(--border);">
+              <button id="btnSearchUsers" class="btn-primary" style="padding:10px 20px;">חפש משתמשים 🔎</button>
             </div>
-            <button type="submit" class="btn-admin">הוסף יין למלאי ➕</button>
-          </form>
+            <div id="adminUsersList" style="display:grid; grid-template-columns:1fr 1fr; gap:15px; max-height:300px; overflow-y:auto;"></div>
+          </div>
+
+          <!-- Global Orders Sub-Panel -->
+          <div id="panelOrdersQuery" style="display:none;">
+            <div style="display:flex; gap:10px; margin-bottom:15px;">
+              <select id="adminOrderFilterStatus" style="padding:10px; border-radius:8px; border:1px solid var(--border);">
+                <option value="">כל הסטטוסים</option>
+                <option value="pending">בהמתנה (Pending)</option>
+                <option value="processing">בטיפול (Processing)</option>
+                <option value="completed">הושלמה (Completed)</option>
+                <option value="cancelled">בוטלה (Cancelled)</option>
+              </select>
+              <button id="btnFetchAdminOrders" class="btn-primary" style="padding:10px 20px;">טען הזמנות 🔄</button>
+            </div>
+            <div id="adminGlobalOrdersList" style="max-height:350px; overflow-y:auto;"></div>
+          </div>
+
         </div>
       </section>
 
-      <!-- Wine Catalog -->
+      <!-- Wine Catalog & Filters -->
       <section id="catalog" class="catalog-section">
         <div class="section-title">
           <h2>הקטלוג המובחר</h2>
           <div class="gold-divider"></div>
         </div>
+
+        <!-- Filter Bar -->
+        <div style="background:#fff; border-radius:14px; padding:18px; margin-bottom:25px; box-shadow:var(--shadow); border:1px solid var(--border);">
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:12px; align-items:center;">
+            <input type="text" id="filterSearch" placeholder="🔍 חיפוש חופשי..." style="padding:9px; border-radius:8px; border:1px solid var(--border);">
+            
+            <select id="filterType" style="padding:9px; border-radius:8px; border:1px solid var(--border);">
+              <option value="">כל הסוגים</option>
+              <option value="red">אדום</option>
+              <option value="white">לבן</option>
+              <option value="rose">רוזה</option>
+              <option value="sparkling">מבעבע</option>
+              <option value="dessert">קינוח</option>
+            </select>
+
+            <select id="filterSweetness" style="padding:9px; border-radius:8px; border:1px solid var(--border);">
+              <option value="">כל הרמות</option>
+              <option value="dry">יבש</option>
+              <option value="semi-dry">חצי יבש</option>
+              <option value="semi-sweet">חצי מתוק</option>
+              <option value="sweet">מתוק</option>
+            </select>
+
+            <input type="number" id="filterMinPrice" placeholder="מחיר מ-" style="padding:9px; border-radius:8px; border:1px solid var(--border);">
+            <input type="number" id="filterMaxPrice" placeholder="מחיר עד" style="padding:9px; border-radius:8px; border:1px solid var(--border);">
+
+            <select id="filterSortBy" style="padding:9px; border-radius:8px; border:1px solid var(--border);">
+              <option value="id">מיון לפי מזהה</option>
+              <option value="price">מיון לפי מחיר</option>
+              <option value="stock_quantity">מיון לפי מלאי</option>
+              <option value="name">מיון לפי שם</option>
+            </select>
+
+            <select id="filterSortOrder" style="padding:9px; border-radius:8px; border:1px solid var(--border);">
+              <option value="ASC">סדר עולה ⬆️</option>
+              <option value="DESC">סדר יורד ⬇️</option>
+            </select>
+
+            <button id="btnApplyFilters" class="btn-primary" style="padding:10px;">סנן תוצאות 🎯</button>
+          </div>
+        </div>
+
         <div id="wineGrid" class="wine-grid"></div>
       </section>
 
@@ -161,6 +237,15 @@
         </p>
       </section>
     </main>
+  </div>
+
+  <!-- User Details Modal (Admin) -->
+  <div id="userDetailModal" class="modal">
+    <div class="modal-card" style="max-width: 700px;">
+      <span id="closeUserDetail" class="close-modal">&times;</span>
+      <h3 id="userDetailTitle">👤 כרטיס לקוח מלא</h3>
+      <div id="userDetailContent" style="margin-top:15px; font-size:0.95rem;"></div>
+    </div>
   </div>
 
   <!-- Orders Modal -->

@@ -30,6 +30,26 @@ const ordersModal = document.getElementById('ordersModal');
 const closeOrders = document.getElementById('closeOrders');
 const ordersList = document.getElementById('ordersList');
 
+// Admin Tabs & Panels
+const tabAdminAddWine = document.getElementById('tabAdminAddWine');
+const tabAdminUsers = document.getElementById('tabAdminUsers');
+const tabAdminOrders = document.getElementById('tabAdminOrders');
+const panelAddWine = document.getElementById('panelAddWine');
+const panelUsersQuery = document.getElementById('panelUsersQuery');
+const panelOrdersQuery = document.getElementById('panelOrdersQuery');
+const adminUserSearchInput = document.getElementById('adminUserSearchInput');
+const btnSearchUsers = document.getElementById('btnSearchUsers');
+const adminUsersList = document.getElementById('adminUsersList');
+const adminOrderFilterStatus = document.getElementById('adminOrderFilterStatus');
+const btnFetchAdminOrders = document.getElementById('btnFetchAdminOrders');
+const adminGlobalOrdersList = document.getElementById('adminGlobalOrdersList');
+const userDetailModal = document.getElementById('userDetailModal');
+const closeUserDetail = document.getElementById('closeUserDetail');
+const userDetailContent = document.getElementById('userDetailContent');
+
+// Filters
+const btnApplyFilters = document.getElementById('btnApplyFilters');
+
 // Cart Elements
 const cartBtn = document.getElementById('cartBtn');
 const cartDrawer = document.getElementById('cartDrawer');
@@ -55,6 +75,38 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchCart();
   }
 });
+
+// Admin Sub-Tabs Toggle
+if (tabAdminAddWine && tabAdminUsers && tabAdminOrders) {
+  tabAdminAddWine.addEventListener('click', () => {
+    tabAdminAddWine.classList.add('active');
+    tabAdminUsers.classList.remove('active');
+    tabAdminOrders.classList.remove('active');
+    panelAddWine.style.display = 'block';
+    panelUsersQuery.style.display = 'none';
+    panelOrdersQuery.style.display = 'none';
+  });
+
+  tabAdminUsers.addEventListener('click', () => {
+    tabAdminUsers.classList.add('active');
+    tabAdminAddWine.classList.remove('active');
+    tabAdminOrders.classList.remove('active');
+    panelUsersQuery.style.display = 'block';
+    panelAddWine.style.display = 'none';
+    panelOrdersQuery.style.display = 'none';
+    fetchAdminUsers();
+  });
+
+  tabAdminOrders.addEventListener('click', () => {
+    tabAdminOrders.classList.add('active');
+    tabAdminAddWine.classList.remove('active');
+    tabAdminUsers.classList.remove('active');
+    panelOrdersQuery.style.display = 'block';
+    panelAddWine.style.display = 'none';
+    panelUsersQuery.style.display = 'none';
+    fetchAdminGlobalOrders();
+  });
+}
 
 // Tab Switchers
 if (tabLogin && tabRegister) {
@@ -253,12 +305,10 @@ function logout() {
   localStorage.removeItem('token');
   localStorage.removeItem('user');
 
-  // איפוס טופס ההתחברות
   document.getElementById('loginForm').reset();
   document.getElementById('otpForm').reset();
   document.getElementById('registerForm').reset();
 
-  // חזרה למצב התחברות רגיל עם סיסמה
   isOtpMode = false;
   passwordGroup.style.display = 'flex';
   document.getElementById('loginPassword').setAttribute('required', 'true');
@@ -277,10 +327,27 @@ function logout() {
   showToast('התנתקת מהחשבון');
 }
 
-
+// Fetch Wines with Dynamic Query Filtering
 async function fetchWines() {
   try {
-    const res = await fetch(`${API_BASE}/wines`);
+    const search = document.getElementById('filterSearch').value;
+    const type = document.getElementById('filterType').value;
+    const sweetness = document.getElementById('filterSweetness').value;
+    const minPrice = document.getElementById('filterMinPrice').value;
+    const maxPrice = document.getElementById('filterMaxPrice').value;
+    const sortBy = document.getElementById('filterSortBy').value;
+    const sortOrder = document.getElementById('filterSortOrder').value;
+
+    const query = new URLSearchParams();
+    if (search) query.append('search', search);
+    if (type) query.append('type', type);
+    if (sweetness) query.append('sweetness', sweetness);
+    if (minPrice) query.append('minPrice', minPrice);
+    if (maxPrice) query.append('maxPrice', maxPrice);
+    if (sortBy) query.append('sortBy', sortBy);
+    if (sortOrder) query.append('sortOrder', sortOrder);
+
+    const res = await fetch(`${API_BASE}/wines?${query.toString()}`);
     const wines = await res.json();
 
     wineGrid.innerHTML = wines.map(w => {
@@ -318,6 +385,143 @@ async function fetchWines() {
     console.error(err);
   }
 }
+
+if (btnApplyFilters) {
+  btnApplyFilters.addEventListener('click', fetchWines);
+}
+
+// Admin Query Functions
+async function fetchAdminUsers() {
+  if (!authToken || currentUser?.role !== 'admin') return;
+  try {
+    const search = adminUserSearchInput.value;
+    const query = new URLSearchParams();
+    if (search) query.append('search', search);
+
+    const res = await fetch(`${API_BASE}/users?${query.toString()}`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    const users = await res.json();
+
+    adminUsersList.innerHTML = users.map(u => `
+      <div style="background:#fcfbfa; border:1px solid var(--border); border-radius:10px; padding:12px;">
+        <strong>${u.full_name}</strong> (${u.role})<br>
+        <small style="color:#666;">ID: ${u.id} | ${u.email}</small><br>
+        <button class="text-btn" style="margin-top:5px; font-weight:bold;" onclick="window.openUserDetail('${u.id}')">
+          👁️ לצפייה בכרטיס לקוח מפורט
+        </button>
+      </div>
+    `).join('');
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+if (btnSearchUsers) {
+  btnSearchUsers.addEventListener('click', fetchAdminUsers);
+}
+
+window.openUserDetail = async function(userId) {
+  try {
+    const res = await fetch(`${API_BASE}/users/${userId}/details`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    const u = await res.json();
+
+    userDetailContent.innerHTML = `
+      <p><strong>מזהה/ת"ז:</strong> ${u.id} | <strong>שם:</strong> ${u.full_name} | <strong>אימייל:</strong> ${u.email}</p>
+      <p><strong>טלפון:</strong> ${u.phone || 'לא הוזן'} | <strong>כתובת:</strong> ${u.address || 'לא הוזנה'}</p>
+      <hr style="border:0; border-top:1px solid var(--border); margin:15px 0;">
+      
+      <h4>🛒 סל קניות פעיל כרגע (${u.CartItems.length} פריטים):</h4>
+      ${u.CartItems.length === 0 ? '<p style="color:#888;">הסל ריק</p>' : `
+        <ul>
+          ${u.CartItems.map(c => `<li>${c.Wine ? c.Wine.name : 'יין'} - כמות: ${c.quantity}</li>`).join('')}
+        </ul>
+      `}
+
+      <hr style="border:0; border-top:1px solid var(--border); margin:15px 0;">
+      <h4>📦 היסטוריית הזמנות (${u.Orders.length} הזמנות):</h4>
+      ${u.Orders.length === 0 ? '<p style="color:#888;">אין הזמנות</p>' : `
+        ${u.Orders.map(o => `
+          <div style="background:#f9f9f9; padding:8px; border-radius:6px; margin-bottom:8px;">
+            <strong>הזמנה #${o.id}</strong> - ${o.total_price} ₪ (סטטוס: ${o.status})<br>
+            <small>פריטים: ${o.OrderItems.map(oi => `${oi.Wine ? oi.Wine.name : 'יין'} (x${oi.quantity})`).join(', ')}</small>
+          </div>
+        `).join('')}
+      `}
+    `;
+    userDetailModal.style.display = 'flex';
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+if (closeUserDetail) {
+  closeUserDetail.addEventListener('click', () => { userDetailModal.style.display = 'none'; });
+}
+
+async function fetchAdminGlobalOrders() {
+  if (!authToken || currentUser?.role !== 'admin') return;
+  try {
+    const status = adminOrderFilterStatus.value;
+    const query = new URLSearchParams();
+    if (status) query.append('status', status);
+
+    const res = await fetch(`${API_BASE}/orders/admin/all?${query.toString()}`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    const orders = await res.json();
+
+    adminGlobalOrdersList.innerHTML = orders.map(o => `
+      <div style="background:#fff; border:1px solid var(--border); border-radius:10px; padding:12px; margin-bottom:10px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <strong>הזמנה #${o.id} - ${o.User ? o.User.full_name : 'לקוח'} (${o.user_id})</strong>
+          <span style="color:var(--wine-main); font-weight:bold;">${o.total_price} ₪</span>
+        </div>
+        <small style="color:#666;">תאריך: ${new Date(o.createdAt).toLocaleDateString('he-IL')}</small>
+        <div style="margin:8px 0; font-size:0.85rem; color:#444;">
+          ${o.OrderItems.map(i => `${i.Wine ? i.Wine.name : 'יין'} (x${i.quantity})`).join(', ')}
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <small>עדכן סטטוס:</small>
+          <select onchange="window.updateOrderStatus(${o.id}, this.value)" style="padding:4px; border-radius:5px;">
+            <option value="pending" ${o.status === 'pending' ? 'selected' : ''}>pending</option>
+            <option value="processing" ${o.status === 'processing' ? 'selected' : ''}>processing</option>
+            <option value="completed" ${o.status === 'completed' ? 'selected' : ''}>completed</option>
+            <option value="cancelled" ${o.status === 'cancelled' ? 'selected' : ''}>cancelled</option>
+          </select>
+        </div>
+      </div>
+    `).join('');
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+if (btnFetchAdminOrders) {
+  btnFetchAdminOrders.addEventListener('click', fetchAdminGlobalOrders);
+}
+
+if (adminOrderFilterStatus) {
+  adminOrderFilterStatus.addEventListener('change', fetchAdminGlobalOrders);
+}
+
+window.updateOrderStatus = async function(orderId, newStatus) {
+  try {
+    const res = await fetch(`${API_BASE}/orders/admin/${orderId}/status`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+      body: JSON.stringify({ status: newStatus })
+    });
+    if (res.ok) {
+      showToast('סטטוס ההזמנה עודכן בהצלחה!');
+      fetchAdminGlobalOrders();
+    }
+  } catch (err) {
+    console.error(err);
+  }
+};
 
 if (addWineForm) {
   addWineForm.addEventListener('submit', async (e) => {
